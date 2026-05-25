@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  linux-clang:
+    name: Linux / Clang 22 + libc++
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Clang 22, libc++, Ninja
+        run: |
+          wget -qO llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get install -y libc++-22-dev libc++abi-22-dev ninja-build
+
+      - name: Install latest CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure
+        run: >
+          cmake --preset clang-release
+          -DCMAKE_C_COMPILER=clang-22
+          -DCMAKE_CXX_COMPILER=clang++-22
+
+      - name: Build
+        run: cmake --build --preset clang-release
+
+      - name: Run tests
+        run: ./build/clang-release/test/test1
+
+  windows-msvc:
+    name: Windows / MSVC
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install latest CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure
+        run: cmake --preset release
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - name: Run tests
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Recurse -Path build/release -Filter test1.exe |
+            Select-Object -First 1
+          if (-not $exe) { throw "test1.exe not found under build/release" }
+          & $exe.FullName

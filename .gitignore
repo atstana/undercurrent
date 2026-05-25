@@ -1,0 +1,10 @@
+.claude/
+.vs/
+.vscode/
+build/
+temp/
+test/sandbox/
+CLAUDE.md
+CMakeUserPresets.json
+vcpkg-configuration.json
+vcpkg.json
