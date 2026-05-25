@@ -433,6 +433,10 @@ namespace uc {
             return (it.outer_);
         }
         static constexpr decltype(auto)
+        outer(const iterator<B>& it) noexcept {
+            return (it.outer_);
+        }
+        static constexpr decltype(auto)
         inner(iterator<B>& it) noexcept {
             return (it.inner_);
         }

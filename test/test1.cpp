@@ -2,6 +2,7 @@
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt)
 
+#include <algorithm>
 #include <compare>
 #include <iostream>
 #include <iterator>
@@ -157,6 +158,9 @@ TEST_CASE("join_view advance_while") {
             std::vector<int> out;
             uc::for_each(j.begin(), j.end(), [&](int i) { out.push_back(i); });
             REQUIRE(out == std::vector<int>{ 1, 2, 3, 4, 5, 6 });
+            out.clear();
+            std::ranges::for_each(j.begin(), j.end(), [&](int i) { out.push_back(i); });
+            REQUIRE(out == std::vector<int>{ 1, 2, 3, 4, 5, 6 });
         }
         SECTION("forward, early stop: find_if stops at the first match") {
             auto j = vv | uc::join;
@@ -204,6 +208,9 @@ TEST_CASE("join_view advance_while") {
         std::vector<int> out;
         uc::for_each(j.begin(), j.end(), [&](int i) { out.push_back(i); });
         REQUIRE(out == std::vector<int>{ 0, 1, 0, 1, 2 });
+        out.clear();
+        std::ranges::for_each(j.begin(), j.end(), [&](int i) { out.push_back(i); });
+        REQUIRE(out == std::vector<int>{ 0, 1, 0, 1, 2 });
     }
 }
 
@@ -218,6 +225,9 @@ TEST_CASE("reverse_iterator find_if") {
         auto r = v | uc::reverse;
         auto it = uc::find_if(r.begin(), r.end(), [](int i){ return i == 8; });
         REQUIRE(*it == 8);
+        std::vector<int> out;
+        std::ranges::for_each(r.begin(), r.end(), [&](int i) { out.push_back(i); });
+        REQUIRE(out == std::vector<int>{ 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 });
     }
     SECTION("filter | reverse") {
         auto mod2 = [](int i) { return i % 2 == 0; };
@@ -225,13 +235,19 @@ TEST_CASE("reverse_iterator find_if") {
         auto r = v | uc::filter(mod2) | uc::reverse;
         auto it = uc::find_if(r.begin(), r.end(), [](int i){ return i == 8; });
         REQUIRE(*it == 8);
+        std::vector<int> out;
+        std::ranges::for_each(r.begin(), r.end(), [&](int i) { out.push_back(i); });
+        REQUIRE(out == std::vector<int>{ 12, 10, 8, 6, 4, 2 });
     }
     SECTION("filter | filter | reverse") {
         auto mod2 = [](int i) { return i % 2 == 0; };
         auto mod4 = [](int i) { return i % 4 == 0; };
 
         auto r = v | uc::filter(mod2) | uc::filter(mod4) | uc::reverse;
-        auto it = uc::find_if(r.begin(), r.end(), [](int i){ return i == 8; });
+        auto it = uc::find_if(r.begin(), r.end(), [&](int i){ return i == 8; });
         REQUIRE(*it == 8);
+        std::vector<int> out;
+        std::ranges::for_each(r.begin(), r.end(), [&](int i) { out.push_back(i); });
+        REQUIRE(out == std::vector<int>{ 12, 8, 4 });
     }
 }
