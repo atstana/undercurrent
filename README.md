@@ -163,13 +163,11 @@ That's the common tactic of undercurrent.
 
 ## Scope
 
-| Adaptors (`source/adaptors/`)      | Algorithms (`source/algorithm/`) |
+| Adaptors                                 | Algorithms                       |
 | ---------------------------------------- | -------------------------------- |
 | `reverse_view`, `take_while_view`,       | `find_if`, `find_if_not`,        |
 | `transform_view`, `filter_view`,         | `for_each`, `next`               |
 | `join_view`, `drop_while_view`           |                                  |
-
-> Note: `next` lives in `uc.iterator` (`source/iterator/`), not `source/algorithm/`; it is listed here as an algorithm for convenience.
 
 This set is intentionally minimal.
 All `uc::` views satisfy the `std::ranges::view` requirements and can be mixed with `std::ranges::views::*`.
@@ -271,7 +269,7 @@ sr::for_each(r.begin(), r.end(), [&](int i) {});
 | `uc warm`     |     0 |        3 |      3 |
 
 
-`uc cold` is slightly worse than `raw loop`. This is because `filter_view`'s `begin` finds the first matching element, returns the iterator, and then stops. I can eliminate this overhead by exposing an API like `approx_begin`, but doing so could return an iterator whose element doesn't satisfy the predicate. That would be undesirable. So I haven't implemented it for now. In practice, the performance impact is likely negligible, as the benchmark above shows.
+`uc cold` is slightly worse than `raw loop`. This is because `filter_view`'s `begin` finds the first matching element, returns the iterator, and then stops. This might be solvable by exposing an API like `approx_begin`, but since it wouldn't be safe, I haven't implemented it for now. In practice, the performance impact is likely negligible, as the benchmark above shows.
 
 See [test/test1.cpp](test/test1.cpp) for the full counter setup.
 
