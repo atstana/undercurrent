@@ -231,39 +231,6 @@ double uc_warm() {
     return std::chrono::duration<double, std::micro>{ end - start }.count();
 }
 
-//double raw_loop() {
-//    constexpr int n = 2000;
-//    auto v = uc::vrand_unique(0, n);
-//
-//    auto ltn = lt<n>{};
-//    auto sq = square{};
-//    auto modn = mod<2>{};
-//
-//    int sum{};
-//    auto start = std::chrono::steady_clock::now();
-//    auto first{ v.begin() };
-//    auto last = [&] {
-//        auto cur{ first };
-//        while((cur != v.end()) && std::invoke(ltn, *cur)) {
-//            ++cur;
-//        }
-//        return cur;
-//    }();
-//    while(first != last) {
-//        --last;
-//        const auto value{ std::invoke(sq, *last) };
-//        if (modn(value)) {
-//            sum += value;
-//        }
-//    }
-//    auto end = std::chrono::steady_clock::now();
-//
-//    if (sum == 0) {
-//        std::cout << sum << '\n';
-//    }
-//    return std::chrono::duration<double, std::micro>{ end - start }.count();
-//}
-
 int main() {
     {
         const int n{ 20 };
@@ -348,13 +315,4 @@ int main() {
         }
         std::cout << uc::get_median(samples) << " micro seconds\n";
     }
-    //{
-    //    const int n{ 20 };
-    //    std::vector<double> samples;
-    //    std::cout << "raw loop\n";
-    //    for (int i = 0; i != n; ++i) {
-    //        samples.push_back(raw_loop());
-    //    }
-    //    std::cout << uc::get_median(samples) << " micro seconds\n";
-    //}
 }
