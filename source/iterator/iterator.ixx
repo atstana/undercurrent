@@ -7,3 +7,4 @@ export import :basic_const_iterator;
 export import :iteration;
 export import :misc;
 export import :reverse_iterator;
+export import :segmented_iterator;

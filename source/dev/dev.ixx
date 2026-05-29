@@ -9,6 +9,8 @@ module;
 #include <algorithm>
 
 export module uc.dev;
+export import :chunked_iterator;
+export import :seg_stack;
 
 namespace uc {
     export

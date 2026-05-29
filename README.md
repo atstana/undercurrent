@@ -47,6 +47,7 @@ struct advance_while_fn{
     friend constexpr advance_while_result<I>
     tag_invoke(advance_while_fn, I first, S last, P pred, Dir dir) {
         if constexpr (std::is_same_v<P, skip_t>) {
+            // "skip": no predicate to evaluate. Advance to the far end.
             if constexpr (dir) {
                 return {
                     std::ranges::next(std::move(first), std::move(last)),
@@ -57,8 +58,15 @@ struct advance_while_fn{
                 return { std::move(first), true };
             }
         }
+        else if constexpr (segmented_iterator<I> && std::is_same_v<I, S>) {
+            // Specialized loop structure for segmented iterators.
+            // Body omitted for brevity; see source/iterator/iteration.ixx.
+            ...
+        }
         else {
+            // The default loop structure.
             if constexpr (dir) {
+                // forward iteration.
                 while(first != last) {
                     if (!std::invoke(pred, *first)) {
                         return { std::move(first), false };
@@ -68,6 +76,7 @@ struct advance_while_fn{
                 return { std::move(first), true };
             }
             else {
+                // backward iteration.
                 while(first != last) {
                     --last;
                     if (!std::invoke(pred, *last)) {
@@ -86,6 +95,9 @@ constexpr advance_while_fn advance_while{};
 `skip_t` is a predicate type that always returns true, but carries an additional meaning.
 Think of it as the caller sending the signal: "Compute the value of `pos` that satisfies `pos == last` (or `pos == first`) as quickly as possible."
 `dir` is an instance of a tag type (`uc::forward_tag` or `uc::backward_tag`) that is convertible to a boolean at compile time, and it controls the direction.
+
+Note: undercurrent now integrates `segmented_iterator` support.
+For more information on `segmented_iterator`, please see [Segmented Iterators and Hierarchical Algorithms](https://lafstern.org/matt/segmented.pdf).
 
 Some algorithms (`uc::find_if`, `uc::find_if_not`, `uc::for_each`, `uc::next`) internally use `uc::advance_while`.
 For example, `uc::next` is defined as follows:

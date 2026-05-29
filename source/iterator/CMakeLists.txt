@@ -9,6 +9,7 @@ target_sources(
     iterator.ixx
     misc.ixx
     reverse_iterator.ixx
+    segmented_iterator.ixx
 )
 target_link_libraries(
     uc_iterator

@@ -10,6 +10,7 @@ module;
 
 export module uc.iterator:iteration;
 import :misc;
+import :segmented_iterator;
 import uc.concepts;
 import uc.tag_invoke;
 
@@ -122,7 +123,6 @@ namespace uc {
         std::indirectly_readable<I> &&
         non_regular_predicate<P, std::iter_reference_t<I>>;
 
-
     struct advance_while_fn{
         template<typename I, typename S, typename P, typename Dir = forward_tag>
         requires tag_invocable<advance_while_fn, I, S, P, Dir>
@@ -157,6 +157,113 @@ namespace uc {
                 }
                 else {
                     return { std::move(first), true };
+                }
+            }
+            else if constexpr (segmented_iterator<I> && std::is_same_v<I, S>) {
+                using tr = segmented_iterator_traits<I>;
+                if constexpr (dir) {
+                    auto cur_seg = tr::segment(first);
+                    auto last_seg = tr::segment(last);
+
+                    if (cur_seg == last_seg) {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::local(first), tr::local(last),
+                            std::move(pred), forward_tag{}
+                        );
+                        return {
+                            tr::compose(std::move(cur_seg), std::move(local)),
+                            flag
+                        };
+                    }
+
+                    {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::local(first), tr::end(cur_seg),
+                            std::ref(pred), forward_tag{}
+                        );
+                        if (!flag) {
+                            return {
+                                tr::compose(std::move(cur_seg), std::move(local)),
+                                false
+                            };
+                        }
+                        ++cur_seg;
+                    }
+
+                    while (cur_seg != last_seg) {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::begin(cur_seg), tr::end(cur_seg),
+                            std::ref(pred), forward_tag{}
+                        );
+                        if (!flag) {
+                            return {
+                                tr::compose(std::move(cur_seg), std::move(local)),
+                                false
+                            };
+                        }
+                        ++cur_seg;
+                    }
+
+                    auto [local, flag] = advance_while_fn{}(
+                        tr::begin(cur_seg), tr::local(last),
+                        std::move(pred), forward_tag{}
+                    );
+                    return {
+                        tr::compose(std::move(cur_seg), std::move(local)),
+                        flag
+                    };
+                }
+                else {
+                    auto cur_seg = tr::segment(last);
+                    auto first_seg = tr::segment(first);
+
+                    if (first_seg == cur_seg) {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::local(first), tr::local(last),
+                            std::move(pred), backward_tag{}
+                        );
+                        return {
+                            tr::compose(std::move(cur_seg), std::move(local)),
+                            flag
+                        };
+                    }
+
+                    {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::begin(cur_seg), tr::local(last),
+                            std::ref(pred), backward_tag{}
+                        );
+                        if (!flag) {
+                            return {
+                                tr::compose(std::move(cur_seg), std::move(local)),
+                                false
+                            };
+                        }
+                        --cur_seg;
+                    }
+
+                    while (first_seg != cur_seg) {
+                        auto [local, flag] = advance_while_fn{}(
+                            tr::begin(cur_seg), tr::end(cur_seg),
+                            std::ref(pred), backward_tag{}
+                        );
+                        if (!flag) {
+                            return {
+                                tr::compose(std::move(cur_seg), std::move(local)),
+                                false
+                            };
+                        }
+                        --cur_seg;
+                    }
+
+                    auto [local, flag] = advance_while_fn{}(
+                        tr::local(first), tr::end(cur_seg),
+                        std::move(pred), backward_tag{}
+                    );
+                    return {
+                        tr::compose(std::move(cur_seg), std::move(local)),
+                        flag
+                    };
                 }
             }
             else {
