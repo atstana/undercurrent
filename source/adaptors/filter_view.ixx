@@ -209,7 +209,12 @@ namespace uc {
                     (std::iter_reference_t<base_iterator> e) {
                         return (
                             std::invoke(first.pred(), e) ?
-                                std::invoke(pred, e) :
+                                std::invoke(
+                                    pred,
+                                    std::forward<
+                                        std::iter_reference_t<base_iterator>
+                                    >(e)
+                                ) :
                                 true
                         );
                     },

@@ -95,7 +95,11 @@ namespace uc {
                 return iterator<simple_view<V>>{ this, sr::end(base_) };
             }
             else {
-                return sentinel<simple_view<V>>{ sr::end(base_) };
+                // Must match the constness chosen by begin().
+                constexpr bool use_const =
+                    simple_view<V> &&
+                    std::is_reference_v<sr::range_reference_t<V>>;
+                return sentinel<use_const>{ sr::end(base_) };
             }
         }
         constexpr auto end() const
@@ -255,7 +259,8 @@ namespace uc {
         requires
             std::is_reference_v<inner_range> &&
             std::bidirectional_iterator<outer_iterator> &&
-            std::bidirectional_iterator<inner_iterator>
+            std::bidirectional_iterator<inner_iterator> &&
+            sr::common_range<inner_range>
         {
             if (outer_ == sr::end(parent_->base_)) {
                 --outer_;
@@ -273,7 +278,8 @@ namespace uc {
         requires
             std::is_reference_v<inner_range> &&
             std::bidirectional_iterator<outer_iterator> &&
-            std::bidirectional_iterator<inner_iterator>
+            std::bidirectional_iterator<inner_iterator> &&
+            sr::common_range<inner_range>
         {
             auto result{ *this };
             this->operator--();

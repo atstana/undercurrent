@@ -12,5 +12,6 @@ endfunction()
 
 uc_add_test(test1)
 uc_add_test(iterator_test1)
+uc_add_test(adaptors_test1)
 uc_add_test(segmented_iterator_test1 uc_dev)
 uc_add_test(seg_stack_test1 uc_dev)

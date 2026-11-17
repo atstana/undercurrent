@@ -150,7 +150,12 @@ namespace uc {
                     [&, pred = std::move(pred)]
                     (std::iter_reference_t<base_iterator> e) {
                         if (std::invoke(*(last.pred_), e)) {
-                            return std::invoke(pred, e);
+                            return std::invoke(
+                                pred,
+                                std::forward<
+                                    std::iter_reference_t<base_iterator>
+                                >(e)
+                            );
                         }
                         else {
                             tw_flag = true;

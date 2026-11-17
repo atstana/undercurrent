@@ -110,7 +110,7 @@ namespace uc {
 
     public:
         using reference = std::invoke_result_t<
-            F, std::iter_reference_t<base_iterator>
+            maybe_const_t<B, F>&, std::iter_reference_t<base_iterator>
         >;
         using value_type = std::remove_cvref_t<reference>;
         using difference_type = std::iter_difference_t<base_iterator>;
@@ -202,20 +202,20 @@ namespace uc {
         operator+(const iterator& lhs, difference_type rhs)
         requires std::random_access_iterator<base_iterator>
         {
-            return iterator{ lhs.base() + rhs };
+            return iterator{ lhs.parent_, lhs.base() + rhs };
         }
         friend constexpr iterator
         operator+(difference_type lhs, const iterator& rhs)
         requires std::random_access_iterator<base_iterator>
         {
-            return iterator{ rhs + lhs };
+            return rhs + lhs;
         }
 
         friend constexpr iterator
         operator-(const iterator& lhs, difference_type rhs)
         requires std::random_access_iterator<base_iterator>
         {
-            return iterator{ lhs.base() - rhs };
+            return iterator{ lhs.parent_, lhs.base() - rhs };
         }
         friend constexpr difference_type
         operator-(const iterator& lhs, const iterator& rhs)
@@ -276,7 +276,7 @@ namespace uc {
 
         template<
             std::sentinel_for<iterator> S,
-            indirect_non_regular_predicate<base_iterator> P,
+            indirect_non_regular_predicate<iterator> P,
             direction_tag Dir
         >
         requires advancable<
@@ -312,7 +312,12 @@ namespace uc {
                     (std::iter_reference_t<base_iterator> e) {
                         return std::invoke(
                             pred,
-                            std::invoke(first.fun(), e)
+                            std::invoke(
+                                first.fun(),
+                                std::forward<
+                                    std::iter_reference_t<base_iterator>
+                                >(e)
+                            )
                         );
                     },
                     dir

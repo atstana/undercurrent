@@ -38,6 +38,7 @@ namespace uc {
 
         constexpr movable_box(const movable_box& other)
         noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::copy_constructible<T>
         {
             if (other.has_value_) {
                 std::construct_at(std::addressof(value_), *other);

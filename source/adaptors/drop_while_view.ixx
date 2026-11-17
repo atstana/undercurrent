@@ -50,16 +50,25 @@ namespace uc {
         }
 
         constexpr sr::iterator_t<V> begin() {
-            if (!cache_.has_value()) {
-                cache_.emplace(
-                    uc::find_if_not(
-                        sr::begin(base_),
-                        sr::end(base_),
-                        std::cref(pred())
-                    )
+            if constexpr (!sr::forward_range<V>) {
+                return uc::find_if_not(
+                    sr::begin(base_),
+                    sr::end(base_),
+                    std::cref(pred())
                 );
             }
-            return *cache_;
+            else {
+                if (!cache_.has_value()) {
+                    cache_.emplace(
+                        uc::find_if_not(
+                            sr::begin(base_),
+                            sr::end(base_),
+                            std::cref(pred())
+                        )
+                    );
+                }
+                return *cache_;
+            }
         }
         constexpr sr::sentinel_t<V> end() {
             return sr::end(base_);
