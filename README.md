@@ -331,7 +331,7 @@ cmake --preset clang-release
 cmake --build --preset clang-release
 
 # Run tests
-./build/clang-release/test/test1
+ctest --preset clang-release
 
 # Run benchmark
 ./build/clang-release/benchmark/benchmark1
@@ -343,7 +343,7 @@ cmake --preset release
 cmake --build --preset release
 
 # Run tests
-./build/release/test/release/test1
+ctest --preset release
 
 # Run benchmark
 ./build/release/benchmark/release/benchmark1

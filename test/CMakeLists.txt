@@ -1,30 +1,16 @@
-add_executable(test1 test1.cpp)
-target_link_libraries(
-    test1
-    PRIVATE
-        Catch2::Catch2WithMain
-        undercurrent
-)
-add_executable(iterator_test1 iterator_test1.cpp)
-target_link_libraries(
-    iterator_test1
-    PRIVATE
-        Catch2::Catch2WithMain
-        undercurrent
-)
-add_executable(segmented_iterator_test1 segmented_iterator_test1.cpp)
-target_link_libraries(
-    segmented_iterator_test1
-    PRIVATE
-        Catch2::Catch2WithMain
-        uc_dev
-        undercurrent
-)
-add_executable(seg_stack_test1 seg_stack_test1.cpp)
-target_link_libraries(
-    seg_stack_test1
-    PRIVATE
-        Catch2::Catch2WithMain
-        uc_dev
-        undercurrent
-)
+function(uc_add_test name)
+    add_executable(${name} ${name}.cpp)
+    target_link_libraries(
+        ${name}
+        PRIVATE
+            Catch2::Catch2WithMain
+            ${ARGN}
+            undercurrent
+    )
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+uc_add_test(test1)
+uc_add_test(iterator_test1)
+uc_add_test(segmented_iterator_test1 uc_dev)
+uc_add_test(seg_stack_test1 uc_dev)

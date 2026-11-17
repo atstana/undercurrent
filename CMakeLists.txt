@@ -14,6 +14,7 @@ if (PROJECT_IS_TOP_LEVEL)
     )
     FetchContent_MakeAvailable(Catch2)
 
+    enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
 endif()

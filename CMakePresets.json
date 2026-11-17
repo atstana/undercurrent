@@ -88,5 +88,44 @@
             "displayName": "clang-release",
             "configurePreset": "clang-release"
         }
+    ],
+
+    "testPresets": [
+        {
+            "name": "test_base",
+            "hidden": true,
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "debug",
+            "inherits": ["test_base"],
+            "configurePreset": "debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "release",
+            "displayName": "release",
+            "inherits": ["test_base"],
+            "configurePreset": "release",
+            "configuration": "Release"
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "clang-debug",
+            "inherits": ["test_base"],
+            "configurePreset": "clang-debug"
+        },
+        {
+            "name": "clang-release",
+            "displayName": "clang-release",
+            "inherits": ["test_base"],
+            "configurePreset": "clang-release"
+        }
     ]
 }

@@ -32,7 +32,7 @@ jobs:
         run: cmake --build --preset clang-release
 
       - name: Run tests
-        run: ./build/clang-release/test/test1
+        run: ctest --preset clang-release
 
   windows-msvc:
     name: Windows / MSVC
@@ -50,9 +50,4 @@ jobs:
         run: cmake --build --preset release
 
       - name: Run tests
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem -Recurse -Path build/release -Filter test1.exe |
-            Select-Object -First 1
-          if (-not $exe) { throw "test1.exe not found under build/release" }
-          & $exe.FullName
+        run: ctest --preset release
