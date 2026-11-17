@@ -339,7 +339,7 @@ namespace uc {
         }
 
         template<
-            indirect_non_regular_predicate<basic_const_iterator> P,
+            indirect_weak_predicate<basic_const_iterator> P,
             direction_tag Dir
         >
         requires advancable<I, I, Dir>

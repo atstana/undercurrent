@@ -300,7 +300,7 @@ namespace uc {
         }
 
         template<
-            indirect_non_regular_predicate<inner_iterator> P,
+            indirect_weak_predicate<inner_iterator> P,
             direction_tag Dir
         >
         requires (
@@ -478,7 +478,7 @@ namespace uc {
             return outer(lhs) == rhs.sen_;
         }
 
-        template<indirect_non_regular_predicate<inner_iterator> P>
+        template<indirect_weak_predicate<inner_iterator> P>
         friend constexpr advance_while_result<iterator<B>>
         tag_invoke(
             tag_t<uc::advance_while>,

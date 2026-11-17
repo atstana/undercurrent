@@ -163,7 +163,7 @@ namespace uc {
         }
 
         template<
-            indirect_non_regular_predicate<I> P,
+            indirect_weak_predicate<I> P,
             direction_tag Dir
         >
         friend constexpr advance_while_result<reverse_iterator>

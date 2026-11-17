@@ -16,9 +16,13 @@ namespace uc {
             { !std::forward<T>(t) } -> std::convertible_to<bool>;
         };
 
+    // Like std::predicate, but not required to be equality-preserving
+    // (e.g. for_each's always-true lambda with side effects).
+    // Must be copy constructible because it is copied down the iterator
+    // hierarchy.
     export
     template<typename P, typename Arg>
-    concept non_regular_predicate =
+    concept weak_predicate =
         std::copy_constructible<P> &&
         std::invocable<P&, Arg> &&
         boolean_testable<

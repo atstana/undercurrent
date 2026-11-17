@@ -173,7 +173,7 @@ namespace uc {
 
         template<
             std::sentinel_for<iterator> S,
-            indirect_non_regular_predicate<base_iterator> PP,
+            indirect_weak_predicate<base_iterator> PP,
             direction_tag Dir
         >
         requires advancable<

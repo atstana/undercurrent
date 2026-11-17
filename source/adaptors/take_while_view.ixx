@@ -125,7 +125,7 @@ namespace uc {
             return ((lhs == rhs.base()) || !std::invoke(*(rhs.pred_), *lhs));
         }
 
-        template<indirect_non_regular_predicate<base_iterator> PP>
+        template<indirect_weak_predicate<base_iterator> PP>
         friend constexpr advance_while_result<base_iterator>
         tag_invoke(
             tag_t<uc::advance_while>,

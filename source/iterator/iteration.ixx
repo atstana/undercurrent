@@ -120,9 +120,9 @@ namespace uc {
 
     export
     template<typename P, typename I>
-    concept indirect_non_regular_predicate =
+    concept indirect_weak_predicate =
         std::indirectly_readable<I> &&
-        non_regular_predicate<P, std::iter_reference_t<I>>;
+        weak_predicate<P, std::iter_reference_t<I>>;
 
     struct advance_while_fn{
         template<typename I, typename S, typename P, typename Dir = forward_tag>
@@ -141,7 +141,7 @@ namespace uc {
         template<
             std::input_iterator I,
             std::sentinel_for<I> S,
-            indirect_non_regular_predicate<I> P,
+            indirect_weak_predicate<I> P,
             direction_tag Dir
         >
         requires advancable<I, S, Dir>
