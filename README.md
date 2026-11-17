@@ -122,7 +122,7 @@ constexpr next_fn next{};
 
 Now, let's look at this from a broader perspective. We've made several algorithms (`uc::next`, `uc::find_if`, `uc::for_each`, etc.) CPO-aware. Their signatures are basically the same as the corresponding `std::ranges` algorithms. This means that authors of range adaptors can simply use these algorithms instead of the standard ones and be ready to benefit from customized logic.
 
-For example, `std::ranges::drop_while_view::begin` calls `std::ranges::find_if_not`, so hypothetically, if we just change that to `uc::find_if_not`, that's it. Or if `std::ranges::find_if_not` were aware of our CPO, we wouldn't need to change any code at all.
+For example, `std::ranges::drop_while_view::begin` calls `std::ranges::find_if_not`, so hypothetically, if we just change that to `uc::find_if_not`, that's it (subject to the trade-off discussed in the *One drawback* section below). Or if `std::ranges::find_if_not` were aware of our CPO, we wouldn't need to change any code at all.
 
 The rest of the work falls to the iterator/sentinel authors, who tweak `uc::advance_while` appropriately.
 See the source code for details on how to customize the CPO. Or, if you have any questions, please feel free to ask. Here, I'll walk through the `reverse_iterator` case as an example.
@@ -155,11 +155,9 @@ class reverse_iterator {
 };
 ```
 
-We simply swap `first` and `last`, apply `advance_while` to the base iterators, and reverse the direction with `!dir`. Shifting `pos` by one when `flag` is `false` is due to the unique semantics of `reverse_iterator`. It's just a small detail, so don't worry about it.
+We simply swap `first` and `last`, apply `advance_while` to the base iterators, and reverse the direction with `!dir`. We shift `pos` by one when `flag` is `false` since `reverse_iterator` keeps its base iterator one position to the right of the element it denotes.
 
-The key is to descends the iterator hierarchy using recursion. The iterators of views produced by adaptors often have a `base()` member, which hints at an underlying hierarchy.
-
-For example, consider the following,
+The key is to descend the iterator hierarchy using recursion. The iterators of views produced by adaptors often have a `base()` member, which hints at an underlying hierarchy.
 
 ```cpp
 std::vector<int> v{ ... };
@@ -194,6 +192,40 @@ std::ranges::subrange sub{ r.begin(), r.end() };
 uc::for_each(sub.begin(), sub.end(), do_something);
 ```
 In short, the type of the range itself doesn't matter much; what matters is the type of the iterator and sentinel.
+
+## One drawback: The `reverse_iterator` adjustment penalty
+
+As mentioned in the Idea section, `reverse_iterator` needs to adjust the underlying iterator returned by `advance_while`. It turns out that this off-by-one adjustment can introduce a performance penalty under specific conditions.
+
+Consider the following scenario:
+
+```cpp
+auto gt0 = [](int i){ return 0 < i; };
+auto eq1 = [](int i){ return i == 1; };
+std::vector<int> v{ 1, 0, 0, 0, 0 };
+auto r = v | uc::filter(gt0) | uc::reverse;
+auto pos = uc::find_if(r.begin(), r.end(), eq1);
+assert(*pos == 1);
+assert(pos.base().base() == v.end());
+```
+
+The algorithm traverses `v` from the back to find the position satisfying `eq1` (or more precisely, a position satisfying both `gt0` and `eq1`). Let's call this position `v0`. However, due to the adjustment required for `reverse_iterator`, the algorithm must also find the position to the right of `v0` that satisfies `gt0`. Since no such element exists to the right of `v0`, the search ends up going all the way back to `v.end()`. Consequently, this algorithm results in traversing `v` back and forth.
+
+This example represents a worst-case scenario (yielding roughly a 2x penalty in terms of the filter predicate call count). It occurs when the matching element is the *last* surviving element in the underlying range, followed by a long tail of filtered-out elements.
+On the other hand, if the next surviving element is nearby, for instance, with `v = {2, 1, 0, 0, 0}` and searching for `2`, the adjustment steps exactly once, keeping the overhead minimal.
+In either case, the result remains correct and the time complexity stays `O(n)`; only the constant factor is affected.
+
+This issue arises only when the adaptor chain takes a form like `filter | ... | reverse` and is used with algorithms requiring early exit, such as `find`. It does not occur with algorithms like `for_each` or `next`.
+While we could mitigate this by avoiding `advance_while` within `find`-family algorithms, doing so would forfeit significant optimization opportunities for typical use cases.
+Based on this analysis, we classify the algorithms in undercurrent as follows:
+
+**Tier 1 — (`for_each`, `next`).**
+These are the parts `std` could adopt with no such downside.
+
+**Tier 2 — (`find_if`, `find_if_not`, and therefore `filter_view::begin` / `drop_while_view::begin`).**
+These are faster with typical chains, but the problem above can occur when a `filter`/`join` (any adaptor whose increment isn't `O(1)`) sits *below* a `reverse` in the chain (e.g. `v | filter(pred) | reverse`).
+
+We decided to continue using `advance_while` for `find`-family algorithms in undercurrent, but if you intend to adopt this design, you should carefully consider the trade-offs.
 
 ## Measurements
 
