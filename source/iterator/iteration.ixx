@@ -103,7 +103,8 @@ namespace uc {
 
     export
     struct skip_t {
-        constexpr bool operator()(...) const noexcept {
+        template<typename... Ts>
+        constexpr bool operator()(Ts&&...) const noexcept {
             return true;
         }
     };
@@ -293,7 +294,7 @@ namespace uc {
 
     struct next_fn{
         template<std::input_iterator I, std::sentinel_for<I> S>
-        I operator()(I cur, S bound) const {
+        constexpr I operator()(I cur, S bound) const {
             return uc::advance_while(
                 std::move(cur),
                 std::move(bound),

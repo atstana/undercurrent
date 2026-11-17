@@ -6,6 +6,7 @@ module;
 #include <concepts>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 
 export module uc.iterator:basic_const_iterator;
@@ -24,18 +25,15 @@ namespace uc {
         constant_iterator<T>, T, basic_const_iterator<T>
     >; 
 
-    template<template<typename> typename T, typename I>
-    constexpr bool is_a_basic_const_iterator(const T<I>& t) noexcept {
-        return requires {
-            requires std::is_same_v<T<I>, basic_const_iterator<I>>;
-        };
-    };
+    template<typename T>
+    constexpr bool is_a_basic_const_iterator_v{ false };
+
+    template<typename I>
+    constexpr bool is_a_basic_const_iterator_v<basic_const_iterator<I>>{ true };
 
     template<typename T>
     concept not_a_const_iterator =
-        requires(T&& t) {
-            requires !uc::is_a_basic_const_iterator(std::forward<T>(t));
-        };
+        !is_a_basic_const_iterator_v<std::remove_cvref_t<T>>;
 
     export
     template<std::input_iterator I>
@@ -87,7 +85,7 @@ namespace uc {
         template<not_a_const_iterator CI>
         requires
             constant_iterator<CI> &&
-            std::convertible_to<const I&, CI>
+            std::convertible_to<I, CI>
         constexpr operator CI() && {
             return std::move(current_);
         }
@@ -103,6 +101,22 @@ namespace uc {
             return static_cast<reference>(*current_);
         }
 
+        constexpr const auto* operator->() const
+        requires
+            std::is_lvalue_reference_v<std::iter_reference_t<I>> &&
+            std::same_as<
+                std::remove_cvref_t<std::iter_reference_t<I>>,
+                value_type
+            >
+        {
+            if constexpr (std::contiguous_iterator<I>) {
+                return std::to_address(current_);
+            }
+            else {
+                return std::addressof(*current_);
+            }
+        }
+
         constexpr reference operator[](difference_type d) const
         requires std::random_access_iterator<I>
         {
@@ -113,7 +127,14 @@ namespace uc {
             ++current_;
             return *this;
         }
-        constexpr basic_const_iterator operator++(int) {
+        constexpr void operator++(int)
+        requires (!std::forward_iterator<I>)
+        {
+            ++current_;
+        }
+        constexpr basic_const_iterator operator++(int)
+        requires std::forward_iterator<I>
+        {
             auto result{ *this };
             this->operator++();
             return result;
@@ -125,11 +146,15 @@ namespace uc {
             return *this;
         }
 
-        constexpr basic_const_iterator& operator--() {
+        constexpr basic_const_iterator& operator--()
+        requires std::bidirectional_iterator<I>
+        {
             --current_;
             return *this;
         }
-        constexpr basic_const_iterator operator--(int) {
+        constexpr basic_const_iterator operator--(int)
+        requires std::bidirectional_iterator<I>
+        {
             auto result{ *this };
             this->operator--();
             return result;
@@ -152,7 +177,7 @@ namespace uc {
         operator+(difference_type lhs, const basic_const_iterator& rhs)
         requires std::random_access_iterator<I>
         {
-            return rhs + lhs.base();
+            return rhs.base() + lhs;
         }
 
         friend constexpr basic_const_iterator
@@ -262,7 +287,7 @@ namespace uc {
             std::random_access_iterator<I> &&
             std::totally_ordered_with<I, Lhs>
         friend constexpr bool
-        operator<(const I& lhs, const basic_const_iterator& rhs) {
+        operator<(const Lhs& lhs, const basic_const_iterator& rhs) {
             return lhs < rhs.base();
         }
         template<not_a_const_iterator Lhs> 
@@ -270,7 +295,7 @@ namespace uc {
             std::random_access_iterator<I> &&
             std::totally_ordered_with<I, Lhs>
         friend constexpr bool
-        operator<=(const I& lhs, const basic_const_iterator& rhs) {
+        operator<=(const Lhs& lhs, const basic_const_iterator& rhs) {
             return lhs <= rhs.base();
         }
 
@@ -279,7 +304,7 @@ namespace uc {
             std::random_access_iterator<I> &&
             std::totally_ordered_with<I, Lhs>
         friend constexpr bool
-        operator>(const I& lhs, const basic_const_iterator& rhs) {
+        operator>(const Lhs& lhs, const basic_const_iterator& rhs) {
             return lhs > rhs.base();
         }
         template<not_a_const_iterator Lhs> 
@@ -287,8 +312,21 @@ namespace uc {
             std::random_access_iterator<I> &&
             std::totally_ordered_with<I, Lhs>
         friend constexpr bool
-        operator>=(const I& lhs, const basic_const_iterator& rhs) {
+        operator>=(const Lhs& lhs, const basic_const_iterator& rhs) {
             return lhs >= rhs.base();
+        }
+
+        friend constexpr iter_const_rvalue_reference_t<I>
+        iter_move(const basic_const_iterator& i)
+        noexcept(noexcept(
+            static_cast<iter_const_rvalue_reference_t<I>>(
+                std::ranges::iter_move(i.current_)
+            )
+        ))
+        {
+            return static_cast<iter_const_rvalue_reference_t<I>>(
+                std::ranges::iter_move(i.current_)
+            );
         }
 
         friend constexpr reference
@@ -313,18 +351,32 @@ namespace uc {
             P pred,
             Dir dir
         ) {
-            auto [pos, flag] = uc::advance_while(
-                std::move(first).base(),
-                std::move(last).base(),
-                [pred = std::move(pred)](std::iter_reference_t<I> e) {
-                    return std::invoke(pred, static_cast<reference>(e));
-                },
-                dir
-            );
-            return {
-                basic_const_iterator{ std::move(pos) },
-                flag
-            };
+            if constexpr (std::is_same_v<P, skip_t>) {
+                auto [pos, flag] = uc::advance_while(
+                    std::move(first).base(),
+                    std::move(last).base(),
+                    std::move(pred),
+                    dir
+                );
+                return {
+                    basic_const_iterator{ std::move(pos) },
+                    flag
+                };
+            }
+            else {
+                auto [pos, flag] = uc::advance_while(
+                    std::move(first).base(),
+                    std::move(last).base(),
+                    [pred = std::move(pred)](std::iter_reference_t<I> e) {
+                        return std::invoke(pred, static_cast<reference>(e));
+                    },
+                    dir
+                );
+                return {
+                    basic_const_iterator{ std::move(pos) },
+                    flag
+                };
+            }
         }
     };
 }

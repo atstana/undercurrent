@@ -5,6 +5,13 @@ target_link_libraries(
         Catch2::Catch2WithMain
         undercurrent
 )
+add_executable(iterator_test1 iterator_test1.cpp)
+target_link_libraries(
+    iterator_test1
+    PRIVATE
+        Catch2::Catch2WithMain
+        undercurrent
+)
 add_executable(segmented_iterator_test1 segmented_iterator_test1.cpp)
 target_link_libraries(
     segmented_iterator_test1

@@ -6,6 +6,7 @@ module;
 #include <concepts>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 export module uc.iterator:reverse_iterator;
 import :iteration;
@@ -42,11 +43,11 @@ namespace uc {
 
         template<typename U>
         requires(
-            !std::is_same_v<std::remove_cvref_t<U>, reverse_iterator> &&
-            std::convertible_to<U, I>
+            !std::is_same_v<U, I> &&
+            std::convertible_to<const U&, I>
         )
         constexpr reverse_iterator(const reverse_iterator<U>& other)
-        noexcept(std::is_nothrow_constructible_v<I, U>)
+        noexcept(std::is_nothrow_constructible_v<I, const U&>)
         : current_{ other.base() } {}
 
         constexpr const I& base() const& noexcept {
@@ -59,6 +60,22 @@ namespace uc {
         constexpr reference operator*() const {
             auto temp{ current_ };
             return *(--temp);
+        }
+
+        constexpr auto operator->() const
+        requires (
+            std::is_pointer_v<I> ||
+            requires(const I i) { i.operator->(); }
+        )
+        {
+            auto temp{ current_ };
+            --temp;
+            if constexpr (std::is_pointer_v<I>) {
+                return temp;
+            }
+            else {
+                return temp.operator->();
+            }
         }
 
         constexpr reference operator[](difference_type d) const
@@ -107,6 +124,33 @@ namespace uc {
         requires std::random_access_iterator<I>
         {
             return reverse_iterator{ current_ + d } ;
+        }
+
+        friend constexpr std::iter_rvalue_reference_t<I>
+        iter_move(const reverse_iterator& i)
+        noexcept(
+            std::is_nothrow_copy_constructible_v<I> &&
+            noexcept(std::ranges::iter_move(--std::declval<I&>()))
+        )
+        {
+            auto temp{ i.current_ };
+            return std::ranges::iter_move(--temp);
+        }
+
+        template<std::indirectly_swappable<I> I2>
+        friend constexpr void
+        iter_swap(const reverse_iterator& x, const reverse_iterator<I2>& y)
+        noexcept(
+            std::is_nothrow_copy_constructible_v<I> &&
+            std::is_nothrow_copy_constructible_v<I2> &&
+            noexcept(std::ranges::iter_swap(
+                --std::declval<I&>(), --std::declval<I2&>()
+            ))
+        )
+        {
+            auto xtemp{ x.current_ };
+            auto ytemp{ y.base() };
+            std::ranges::iter_swap(--xtemp, --ytemp);
         }
 
         friend constexpr reference
@@ -218,11 +262,9 @@ namespace uc {
 
     export
     template<std::bidirectional_iterator I>
-    constexpr auto
-    make_reverse_iterator(I&& i) {
-        return reverse_iterator<std::decay_t<I>>{
-            std::forward<I>(i)
-        };
+    constexpr reverse_iterator<I>
+    make_reverse_iterator(I i) {
+        return reverse_iterator<I>{ std::move(i) };
     }
 
     template<typename T>

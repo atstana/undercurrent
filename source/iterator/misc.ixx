@@ -18,8 +18,15 @@ namespace uc {
             std::iter_reference_t<T>
         >;
 
+    template<typename T>
+    using iter_const_rvalue_reference_t =
+        std::common_reference_t<
+            const std::iter_value_t<T>&&,
+            std::iter_rvalue_reference_t<T>
+        >;
+
     template<typename I>
-    concept nothrow_forward_iterator = 
+    concept nothrow_forward_iterator =
         std::forward_iterator<I> &&
         requires {
             requires
@@ -50,19 +57,19 @@ namespace uc {
         }
         else if constexpr (
             std::random_access_iterator<I> &&
-            std::is_base_of_v<Tag, std::random_access_iterator_tag>
+            std::is_base_of_v<std::random_access_iterator_tag, Tag>
         ) {
             return std::random_access_iterator_tag{};
         }
         else if constexpr (
             std::bidirectional_iterator<I> &&
-            std::is_base_of_v<Tag, std::bidirectional_iterator_tag>
+            std::is_base_of_v<std::bidirectional_iterator_tag, Tag>
         ) {
             return std::bidirectional_iterator_tag{};
         }
         else if constexpr (
             std::forward_iterator<I> &&
-            std::is_base_of_v<Tag, std::forward_iterator_tag>
+            std::is_base_of_v<std::forward_iterator_tag, Tag>
         ) {
             return std::forward_iterator_tag{};
         }
