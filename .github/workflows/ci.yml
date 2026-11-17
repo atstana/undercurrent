@@ -19,8 +19,13 @@ jobs:
           sudo ./llvm.sh 22
           sudo apt-get install -y libc++-22-dev libc++abi-22-dev ninja-build
 
-      - name: Install latest CMake
+      # Pinned to 4.4.x: CMake 4.5 builds the `import std` module for every
+      # C++20 module target, and fails to locate libc++'s std.cppm from
+      # apt.llvm.org packages. undercurrent does not use `import std`.
+      - name: Install CMake 4.4
         uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~4.4.0"
 
       - name: Configure
         run: >
@@ -40,8 +45,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install latest CMake
+      # Kept in sync with the Linux job.
+      - name: Install CMake 4.4
         uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~4.4.0"
 
       - name: Configure
         run: cmake --preset release
